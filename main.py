@@ -24,9 +24,9 @@ import string
 import requests
 import secrets
 
-EMAIL = os.environ["EMAIL"]
-EMAIL_PASSWORD = os.environ["EMAIL_PASSWORD"]
-SMTP_ADDRESS = os.environ["SMTP_ADDRESS"]
+EMAIL = os.environ.get('EMAIL')
+EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD')
+SMTP_ADDRESS = os.environ.get('SMTP_ADDRESS')
 # API_KEY = os.environ["API_KEY"]
 
 '''
@@ -282,7 +282,7 @@ def generate_token(length=32):
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     form = UserRegd()
-    print(f"user existsCheck: start")
+    # print(f"user existsCheck: start")
     if request.method == 'POST':
         cursor.row_factory = sqlite3.Row
         # print(f"user existsCheck: Entered Post Query")
@@ -325,25 +325,25 @@ def search_users():
     form = UserSearch()
     update_flag = False
     submit_label = 'Search'
-    print(f"Start")
-    print(f"Email: {form.email.data}")
+    # print(f"Start")
+    # print(f"Email: {form.email.data}")
     # form.update_role.data = ''
     cursor.row_factory = sqlite3.Row
 
     # # TODO: update_admin_role() to provide access to create blog and update
     sql_check_diff_count = "SELECT count(*) FROM user WHERE email = ?"
     user_count = cursor.execute(sql_check_diff_count, [form.email.data]).fetchone()[0]
-    print(f"User_Count: {user_count}")
+    # print(f"User_Count: {user_count}")
     if user_count > 0:
         sql_retrieve_admin_code = "SELECT email, admin_role FROM user WHERE email = ?"
         current_admin_rec = cursor.execute(sql_retrieve_admin_code, [form.email.data]).fetchone()
         email, admin_role = current_admin_rec
-        print(f"Admin Role, Form.ADMIN_ROLE.DATA: {type(admin_role)}--{admin_role} ---{type(form.admin_role.data)}--"
-              f"{form.admin_role.data}")
-        print(f"form.update_role.data: {form.update_role.data}")
+        # print(f"Admin Role, Form.ADMIN_ROLE.DATA: {type(admin_role)}--{admin_role} ---{type(form.admin_role.data)}--"
+        #       f"{form.admin_role.data}")
+        # print(f"form.update_role.data: {form.update_role.data}")
         if form.admin_role.data != '' and form.update_role.data:
             if admin_role != int(form.admin_role.data):
-                print("Enter POST of Search Update")
+                # print("Enter POST of Search Update")
                 sql_update_role_query = "UPDATE user SET admin_role = ? WHERE email = ?"
                 update_role_param = (form.admin_role.data, email)
                 cursor.execute(sql_update_role_query, update_role_param)
@@ -357,14 +357,14 @@ def search_users():
     if form.validate_on_submit() and (form.admin_role.data == '' or not form.update_role.data):
         # Retrieve the form data
         email = form.email.data
-        print(f"Email1: {email}")
+        # print(f"Email1: {email}")
         user_data = []
 
         if email.upper() == 'ALL':
             sql_user_data = "SELECT id, email, name, admin_role FROM user"
             user_rec = cursor.execute(sql_user_data).fetchall()
             user_data = [{'id': rec[0], 'email': rec[1], 'name': rec[2], 'admin_role': rec[3]} for rec in user_rec]
-            print(f"User Data1: {user_data}")
+            # print(f"User Data1: {user_data}")
             submit_label = 'Search'
         else:
             sql_count_query = "SELECT count(*) FROM user WHERE email = ?"
@@ -374,7 +374,7 @@ def search_users():
                 user_rec = cursor.execute(sql_user_data, [form.email.data]).fetchall()
                 user_data = [{'id': rec[0], 'email': rec[1], 'name': rec[2], 'admin_role': rec[3]} for rec in user_rec]
                 form.admin_role.data = user_data[0]['admin_role']
-                print(f"User Data21: {user_data}")
+                # print(f"User Data21: {user_data}")
                 submit_label = 'Update Admin Role'
             else:
                 flash("Invalid Email!", 'message')
@@ -432,9 +432,9 @@ def request_reset_password():
         sql_query = "SELECT id, email, password, name FROM user WHERE email = ?"
         user_rec = cursor.execute(sql_query, [form.email.data]).fetchone()
         if user_rec:
-            print(f"User Rec in Reset: {user_rec}")
+            # print(f"User Rec in Reset: {user_rec}")
             user_id, user_email, user_password, user_name = user_rec
-            print(f"User rec: {user_email}, {user_password}, {user_name}")
+            # print(f"User rec: {user_email}, {user_password}, {user_name}")
 
             verification_code = ''.join(random.choices(string.digits, k=4))
             # verification_code_time = f"{verification_code}-{now}"
@@ -444,7 +444,7 @@ def request_reset_password():
             cursor.execute(sql_verification_query, param)
 
             random_token = generate_token()
-            print("Random Token:", random_token)
+            # print("Random Token:", random_token)
             sql_check_token_userid = "SELECT count(*) FROM token WHERE user_id = ? "
             sql_token_userid_count = cursor.execute(sql_check_token_userid, [user_id]).fetchone()[0]
             if sql_token_userid_count > 0:
@@ -523,7 +523,7 @@ def reset_password(token):
                                                                       method='pbkdf2:sha256', salt_length=8)
                     sql_verification_query = "SELECT count(*) FROM user WHERE verification_code = ?"
                     verification_count = cursor.execute(sql_verification_query, [form.verify.data]).fetchone()[0]
-                    print(f"Verification Count: {verification_count}")
+                    # print(f"Verification Count: {verification_count}")
                     if verification_count > 0:
                         sql_update_query = "UPDATE user SET password = ? WHERE email = ?;"
                         update_password_param = (hash_and_salted_password, form.email.data)
@@ -592,20 +592,20 @@ def show_post(post_id):
     # if current_user.is_authenticated:
     sql_comment_count = "SELECT count(*) FROM comment WHERE post_id = ?"
     comment_count = cursor.execute(sql_comment_count, [post_id]).fetchone()[0]
-    print(f"Comment Count: {comment_count}")
+    # print(f"Comment Count: {comment_count}")
     if comment_count > 0:
         sql_comment_query = ("SELECT id, user_id, user_name, text, date, post_id, (SELECT email FROM user "
                              "Where user.id = comment.user_id LIMIT 1) email FROM comment WHERE post_id = ?")
 
         comment_rec = cursor.execute(sql_comment_query, [post_id]).fetchall()
-        print(f"Comment Rec - {comment_rec}")
+        # print(f"Comment Rec - {comment_rec}")
         # comment_data = [dict(rec) for rec in comment_rec]  # It will not work as comment table has all columns
         comment_data = [{"id": rec[0], "author_id": rec[1], "author": rec[2], "text": rec[3], "date": rec[4],
                          "post_id": rec[5], "email": rec[6]} for rec in comment_rec]
 
         # comment_data[0]['comment_user_email'] = gravatar_url(comment_data[0]['email'])
         # comment_data[0]['comment_user_email'] = "https://gravatar.com/appstechemail"
-        print(f"Comment Data another: {comment_data}")
+        # print(f"Comment Data another: {comment_data}")
         return render_template("post.html", post=requested_post, comments=comment_data,
                                form=form, current_user=current_user)
 
@@ -691,7 +691,7 @@ def edit_about():
     sql_project_query = ("SELECT id, project_id, project_name, about, last_updated_on FROM project "
                          "WHERE project_id = ? ")
     project_rec = cursor.execute(sql_project_query, ['PMHUT001']).fetchone()
-    print(f"Project Rec: {project_rec}")
+    # print(f"Project Rec: {project_rec}")
     pid, project_id, project_name, project_about, last_update_on = project_rec
     form = AboutForm(project_about=project_about)
     if form.validate_on_submit() and request.method == 'POST':
