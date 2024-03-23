@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blog Message</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 20px auto;
+        background-color: #fff;
+        padding: 30px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      p {
+        color: #666;
+        margin-bottom: 30px;
+      }
+      .logo {
+        display: block;
+        margin: 0 auto;
+        width: 150px;
+        margin-bottom: 20px;
+      }
+
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <img src="cid:image1" alt="Embedded PMHut Logo" class="logo" />
+      <h1 >Blog Message</h1>
+      <p style="margin-top: 30px">
+        {{ msg_body }}
+      </p>
+      <p style="margin-top: 50px">
+        From:<br>
+        {{name}}<br>
+        {{email}} - {{phone}}
+    </div>
+  </body>
+</html>

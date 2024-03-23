@@ -1,0 +1,75 @@
+{% from "bootstrap5/form.html" import render_form %}
+{% block content %} {%include "header.html" %}
+
+<!-- Page Header -->
+<header
+  class="masthead"
+  style="background-image: url('../static/assets/img/login-bg.jpg')"
+>
+  <div class="container position-relative px-4 px-lg-5">
+    <div class="row gx-4 gx-lg-5 justify-content-center">
+      <div class="col-md-10 col-lg-8 col-xl-7">
+        <div class="page-heading">
+          <h1>User Details</h1>
+          <span class="subheading">To update Admin role!</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="mb-4">
+  <div class="container">
+    <div class="row">
+
+      <!-- TODO: add a flash message here for users registering twice -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <p></p>
+          <ul class=flashes>
+          {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+          {% endfor %}
+          </ul>
+        {% endif %}
+      {% endwith %}
+
+      <div class="d-flex flex-row align-items-center gap-4 w-30 col-lg-6 col-md-5 mx-auto">
+        <!--TODO: render login form here-->
+
+          {{ render_form(form, button_size='md', button_style='secondary', extra_classes='gap-4
+          form-control form-floating mb-3')}}
+
+      </div>
+
+        <form class="row g-3, table table-hove">
+            <div class="col">
+                <table class="table">
+                    <thead>
+                        <tr class="table-dark">
+                            <th>UID</th>
+                            <th>Email</th>
+                            <th>Name</th>
+                            <th>Admin Role</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rec in user_data %}
+                        <tr class="align-middle table-secondary">
+                            <td>{{ rec['id'] }}</td>
+                            <td>{{ rec.email }}</td>
+                            <td>{{ rec.name }}</td>
+                            <td>{{ rec.admin_role }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
+
+
+    </div>
+  </div>
+</main>
+
+{% include "footer.html" %} {% endblock %}
