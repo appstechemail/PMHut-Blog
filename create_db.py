@@ -1,11 +1,14 @@
 import sqlite3
 from werkzeug.security import generate_password_hash
+import os
+
+DB_URL = os.environ.get("DB_URL")
 
 
 class CreateDB:
     def __init__(self):
         # CREATE DB
-        self.db = sqlite3.connect(r"./instance/posts.db", check_same_thread=False, timeout=30)
+        self.db = sqlite3.connect(rf"{DB_URL}", check_same_thread=False, timeout=30)
         self.cursor = self.db.cursor()
         self.create_blog_post_table()
         self.create_comment_table()
