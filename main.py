@@ -171,7 +171,7 @@ def load_user(user_id):
     cursor.row_factory = sqlite3.Row
     sql_user_loader = ("SELECT id, email, password, name, admin_role, "
                        "(SELECT COALESCE(SUM(author_id), 0) FROM blog_post "
-                       "Where user.id = blog_post.author_id LIMIT 1) author_id FROM USER WHERE id = ?;")
+                       "Where user.id = blog_post.author_id LIMIT 1) author_id FROM USER_tab WHERE id = ?;")
     user_row = cursor.execute(sql_user_loader, [user_id]).fetchone()
     # print(f"User Row in Load User: {user_row[0]}")
     # print(f"User Row in Load User: {dict(user_row)}")
@@ -200,7 +200,7 @@ def restrict_to_super_user(func):
 def restrict_to_admin(func):
     @wraps(func)
     def decorated_function(*args, **kwargs):
-        # sql_admin_query = "SELECT admin_role from user WHERE id = ? "
+        # sql_admin_query = "SELECT admin_role from user_tab WHERE id = ? "
         # admin_role = cursor.execute(sql_admin_query, [current_user.id]).fetchone()[0]
         # print(f"Inside restrict_to_admin - Admin_role is : {admin_role}")
         # print(f"Inside restrict_to_admin - Admin_role is : {current_user.admin_role}")
@@ -287,7 +287,7 @@ def register():
         cursor.row_factory = sqlite3.Row
         # print(f"user existsCheck: Entered Post Query")
         # print(f"Email: {form.email.data}")
-        sql_query = "SELECT count(*) FROM user WHERE email = ?;"
+        sql_query = "SELECT count(*) FROM user_tab WHERE email = ?;"
         user_exists = cursor.execute(sql_query, [form.email.data]).fetchone()[0]
         # user_data = [rec for rec in user_exists]
         # print(f"user exists: {user_exists}")
@@ -305,7 +305,7 @@ def register():
             db.commit()
             sql_register = ("SELECT id, email, password, name, admin_role, (SELECT COALESCE(SUM(author_id), 0) "
                             "FROM blog_post Where user.id = blog_post.author_id LIMIT 1) author_id "
-                            "FROM USER WHERE email = ?")
+                            "FROM USER_tab WHERE email = ?")
             user_reg_row = cursor.execute(sql_register, [form.email.data]).fetchone()
             user = UserM(user_reg_row['id'], user_reg_row['email'], user_reg_row['password'], user_reg_row['name'],
                          user_reg_row['admin_role'], user_reg_row['author_id'])
@@ -331,11 +331,11 @@ def search_users():
     cursor.row_factory = sqlite3.Row
 
     # # TODO: update_admin_role() to provide access to create blog and update
-    sql_check_diff_count = "SELECT count(*) FROM user WHERE email = ?"
+    sql_check_diff_count = "SELECT count(*) FROM user_tab WHERE email = ?"
     user_count = cursor.execute(sql_check_diff_count, [form.email.data]).fetchone()[0]
     # print(f"User_Count: {user_count}")
     if user_count > 0:
-        sql_retrieve_admin_code = "SELECT email, admin_role FROM user WHERE email = ?"
+        sql_retrieve_admin_code = "SELECT email, admin_role FROM user_tab WHERE email = ?"
         current_admin_rec = cursor.execute(sql_retrieve_admin_code, [form.email.data]).fetchone()
         email, admin_role = current_admin_rec
         # print(f"Admin Role, Form.ADMIN_ROLE.DATA: {type(admin_role)}--{admin_role} ---{type(form.admin_role.data)}--"
@@ -361,16 +361,16 @@ def search_users():
         user_data = []
 
         if email.upper() == 'ALL':
-            sql_user_data = "SELECT id, email, name, admin_role FROM user"
+            sql_user_data = "SELECT id, email, name, admin_role FROM user_tab"
             user_rec = cursor.execute(sql_user_data).fetchall()
             user_data = [{'id': rec[0], 'email': rec[1], 'name': rec[2], 'admin_role': rec[3]} for rec in user_rec]
             # print(f"User Data1: {user_data}")
             submit_label = 'Search'
         else:
-            sql_count_query = "SELECT count(*) FROM user WHERE email = ?"
+            sql_count_query = "SELECT count(*) FROM user_tab WHERE email = ?"
             user_count = cursor.execute(sql_count_query, [form.email.data]).fetchone()[0]
             if user_count > 0:
-                sql_user_data = "SELECT id, email, name, admin_role FROM user WHERE email = ?"
+                sql_user_data = "SELECT id, email, name, admin_role FROM user_tab WHERE email = ?"
                 user_rec = cursor.execute(sql_user_data, [form.email.data]).fetchall()
                 user_data = [{'id': rec[0], 'email': rec[1], 'name': rec[2], 'admin_role': rec[3]} for rec in user_rec]
                 form.admin_role.data = user_data[0]['admin_role']
@@ -395,12 +395,12 @@ def login():
         password = form.password.data
         cursor.row_factory = sqlite3.Row
         # Find user by email entered.
-        sql_count = "SELECT count(*) from user WHERE email = ?"
+        sql_count = "SELECT count(*) from user_tab WHERE email = ?"
         user_count = cursor.execute(sql_count, [username]).fetchone()[0]
         if user_count != 0:
             sql_login_user = ("SELECT id, email, password, name, admin_role, (SELECT COALESCE(SUM(author_id), 0) "
                               "FROM blog_post Where user.id = blog_post.author_id LIMIT 1) author_id "
-                              "FROM USER WHERE email = ?")
+                              "FROM USER_tab WHERE email = ?")
             user_row = cursor.execute(sql_login_user, [username]).fetchone()
             user_rec = dict(user_row)
             # print(user_rec)
@@ -429,7 +429,7 @@ def request_reset_password():
     if request.method == "POST":
         # Generate a random four-digit code
 
-        sql_query = "SELECT id, email, password, name FROM user WHERE email = ?"
+        sql_query = "SELECT id, email, password, name FROM user_tab WHERE email = ?"
         user_rec = cursor.execute(sql_query, [form.email.data]).fetchone()
         if user_rec:
             # print(f"User Rec in Reset: {user_rec}")
@@ -515,13 +515,13 @@ def reset_password(token):
         get_token_data = cursor.execute(sql_check_token_used_query, [token]).fetchone()
         token_id, user_id, token_used = get_token_data
         if check_token and not token_used:
-            sql_check_email = "SELECT count(*) FROM user WHERE email = ?"
+            sql_check_email = "SELECT count(*) FROM user_tab WHERE email = ?"
             email_count = cursor.execute(sql_check_email, [form.email.data]).fetchone()[0]
             if email_count > 0:
                 if form.new_password.data == form.confirm_password.data:
                     hash_and_salted_password = generate_password_hash(password=form.new_password.data,
                                                                       method='pbkdf2:sha256', salt_length=8)
-                    sql_verification_query = "SELECT count(*) FROM user WHERE verification_code = ?"
+                    sql_verification_query = "SELECT count(*) FROM user_tab WHERE verification_code = ?"
                     verification_count = cursor.execute(sql_verification_query, [form.verify.data]).fetchone()[0]
                     # print(f"Verification Count: {verification_count}")
                     if verification_count > 0:
@@ -530,7 +530,7 @@ def reset_password(token):
                         cursor.execute(sql_update_query, update_password_param)
 
                         sql_update_token_used_query = ("UPDATE token SET token_used = ? "
-                                                       "WHERE user_id = (SELECT id FROM USER WHERE email = ?)")
+                                                       "WHERE user_id = (SELECT id FROM USER_tab WHERE email = ?)")
                         update_token_used_param = (1, form.email.data)
                         cursor.execute(sql_update_token_used_query, update_token_used_param)
 
@@ -564,6 +564,7 @@ def logout():
 def get_all_posts():
     # TODO: Query the database for all the posts. Convert the data to a python list.
     posts = blog_posts.blog_posts()
+
     # print(f"Inside Get All Posts - Current UserName: {current_user}")
     # print(f"Inside Posts Get All Posts - Current User Is Authenticated: {current_user.is_authenticated}")
     return render_template("index.html", all_posts=posts, current_user=current_user)
@@ -594,7 +595,7 @@ def show_post(post_id):
     comment_count = cursor.execute(sql_comment_count, [post_id]).fetchone()[0]
     # print(f"Comment Count: {comment_count}")
     if comment_count > 0:
-        sql_comment_query = ("SELECT id, user_id, user_name, text, date, post_id, (SELECT email FROM user "
+        sql_comment_query = ("SELECT id, user_id, user_name, text, date, post_id, (SELECT email FROM user_tab "
                              "Where user.id = comment.user_id LIMIT 1) email FROM comment WHERE post_id = ?")
 
         comment_rec = cursor.execute(sql_comment_query, [post_id]).fetchall()
@@ -620,7 +621,7 @@ def new_blog_post():
     posts = blog_posts.blog_posts()
     # max_id = {k: max(d[k] for d in posts) for k in posts[0].keys()}["id"]
     if form.validate_on_submit() and request.method == 'POST':
-        # sql_insert_authid = "SELECT id FROM user WHERE name = ?"
+        # sql_insert_authid = "SELECT id FROM user_tab WHERE name = ?"
         # print(f"Inside new_blog_post - Author Name: {form.author.data}")
         # auth_id = cursor.execute(sql_insert_authid, [form.author.data]).fetchone()[0]
         # print(f"Author ID: {auth_id}")

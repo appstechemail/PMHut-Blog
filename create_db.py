@@ -52,7 +52,7 @@ class CreateDB:
         check_user_tlb = self.cursor.fetchone()
         if check_user_tlb[0] == 0:
             self.cursor.execute(
-                "CREATE TABLE 'user' (id INTEGER PRIMARY KEY, email VARCHAR(100) NOT NULL UNIQUE, "
+                "CREATE TABLE user_tab (id INTEGER PRIMARY KEY, email VARCHAR(100) NOT NULL UNIQUE, "
                 "password VARCHAR(100) NOT NULL, name VARCHAR(250) NOT NULL, admin_role BIT(1) DEFAULT 0, "
                 "verification_code INTEGER DEFAULT 0);")
 
