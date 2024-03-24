@@ -1,5 +1,6 @@
 import sqlite3
 from create_db import CreateDB
+import psycopg2
 
 
 class BlogList:
@@ -26,20 +27,17 @@ class BlogList:
                 cursor.execute(sql, values)
             else:
                 cursor.execute(sql)
-            if operation_type == 'query':
-                rows = cursor.fetchall()
-                return rows
-            elif operation_type == 'insert':
-                self.get_db().commit()
-                print("Record inserted successfully.")
-            elif operation_type == 'update':
-                self.get_db().commit()
-                print("Record updated successfully.")
-            elif operation_type == 'delete':
-                self.get_db().commit()
-                print("Record deleted successfully.")
-        except sqlite3.Error as e:
-            print("SQLite error:", e.args[0])  # Print the error message
+            if operation_type in ['query', 'insert', 'update', 'delete']:
+                if operation_type == 'query':
+                    rows = cursor.fetchall()
+                    return rows
+                else:
+                    self.get_db().commit()
+                    print(f"Record {operation_type}ed successfully.")
+            else:
+                print(f"Invalid operation type: {operation_type}")
+        except psycopg2.Error as e:
+            print("PostgreSQL error:", e)
             # Log the error
             # Rollback transaction if needed
         finally:
@@ -52,7 +50,6 @@ class BlogList:
             self.db.close()
 
     def blog_posts(self):
-        self.get_cursor().row_factory = sqlite3.Row
         sql_post_query = 'SELECT * from blog_post;'
         blog_posts_data = self.execute_query(sql_post_query)
         # print(f"Blog Post Data: {blog_posts_data}")

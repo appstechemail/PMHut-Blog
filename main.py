@@ -689,7 +689,6 @@ def about():
         return render_template('about.html', text='To be Updated')
 
 
-
 # TODO: edit_about() to edit about
 @app.route("/edit-about", methods=['GET', 'POST'])
 @restrict_to_super_user
