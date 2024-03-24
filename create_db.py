@@ -15,11 +15,11 @@ class CreateDB:
         # CREATE DB
         self.db = psycopg2.connect(host=DB_HOSTNAME, database=DB_DATABASE, user=DB_USERNAME, password=DB_PASSWORD)
         self.cursor = self.db.cursor()
+        self.create_project_table()
+        self.create_user_table()
+        self.create_token_table()
         self.create_blog_post_table()
         self.create_comment_table()
-        self.create_token_table()
-        self.create_user_table()
-        self.create_project_table()
 
     # ############# CREATE Project TABLE IN DB #############################
     def create_project_table(self):
