@@ -35,7 +35,7 @@ class CreateDB:
                 "project_name VARCHAR(100) NOT NULL, about TEXT NOT NULL, "
                 "last_updated_on DATE NOT NULL DEFAULT CURRENT_TIMESTAMP);")
 
-            sql_user_insert = "INSERT INTO project (project_id, project_name, about) VALUES (?, ?, ?)"
+            sql_user_insert = "INSERT INTO project (project_id, project_name, about) VALUES (%s, %s, %s)"
             user_insert_param = ('PMHUT001', 'PMHut Project', 'XYZ')
             self.cursor.execute(sql_user_insert, user_insert_param)
             self.db.commit()
@@ -59,7 +59,7 @@ class CreateDB:
             hash_and_salted_password = generate_password_hash(password='admin123$$',
                                                               method='pbkdf2:sha256', salt_length=8)
 
-            sql_user_insert = "INSERT INTO user (email, password, name, admin_role) VALUES (?, ?, ?, ?)"
+            sql_user_insert = "INSERT INTO user (email, password, name, admin_role) VALUES (%s, %s, %s, %s)"
             user_insert_param = ('appstechemail@gmail.com', hash_and_salted_password, 'Admin-User', 1)
             self.cursor.execute(sql_user_insert, user_insert_param)
             self.db.commit()
