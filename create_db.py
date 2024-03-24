@@ -31,8 +31,9 @@ class CreateDB:
         # print(f"Check Comment Post table: {check_comment_tlb}")
 
         # POSTGRESQL
-        check_comment_tlb = self.cursor.execute("SELECT count(*) FROM pg_catalog.pg_tables where "
-                                                "table_name = 'comment' and type = 'table'; ").fetchone()[0]
+        check_comment_tlb = self.cursor.execute("SELECT COUNT(*) FROM information_schema.tables "
+                                                "WHERE table_name = 'comment' "
+                                                "AND table_type = 'BASE TABLE'; ").fetchone()[0]
 
         if check_comment_tlb == 0:
             self.cursor.execute(
@@ -52,8 +53,9 @@ class CreateDB:
         #     "SELECT count(*) FROM sqlite_master where tbl_name = 'blog_post' and type = 'table'; ").fetchone()[0]
 
         # POSTGRESQL
-        check_blog_post_tlb = self.cursor.execute("SELECT count(*) FROM pg_catalog.pg_tables where "
-                                                  "table_name = 'blog_post' and type = 'table'; ").fetchone()[0]
+        check_blog_post_tlb = self.cursor.execute("SELECT COUNT(*) FROM information_schema.tables "
+                                                  "WHERE table_name = 'blog_post' AND "
+                                                  "table_type = 'BASE TABLE'; ").fetchone()[0]
         # print(f"Check Blog Post table: {check_blog_post_tlb}")
         if check_blog_post_tlb == 0:
             self.cursor.execute(
@@ -73,8 +75,9 @@ class CreateDB:
         #         "SELECT count(*) FROM sqlite_master where tbl_name = 'token' and type = 'table'; ").fetchone()[0]
 
         # POSTGRESQL
-        check_token_tlb = self.cursor.execute("SELECT count(*) FROM pg_catalog.pg_tables where "
-                                              "table_name = 'token' and type = 'table'; ").fetchone()[0]
+        check_token_tlb = self.cursor.execute("SELECT COUNT(*) FROM information_schema.tables "
+                                              "WHERE table_name = 'token' AND "
+                                              "table_type = 'BASE TABLE'; ").fetchone()[0]
         # print(f"Check User table: {check_token_tlb}")
 
         if check_token_tlb == 0:
@@ -92,8 +95,9 @@ class CreateDB:
         #         "SELECT count(*) FROM sqlite_master where tbl_name = 'user' and type = 'table'; ").fetchone()[0]
 
         # POSTGRESQL
-        check_user_tlb = self.cursor.execute("SELECT count(*) FROM pg_catalog.pg_tables where "
-                                             "table_name = 'user' and type = 'table'; ").fetchone()[0]
+        check_user_tlb = self.cursor.execute("SELECT COUNT(*) FROM information_schema.tables "
+                                             "WHERE table_name = 'user' AND "
+                                             "table_type = 'BASE TABLE'; ").fetchone()[0]
         # print(f"Check User table: {check_user_tlb}")
 
         if check_user_tlb == 0:
@@ -120,8 +124,9 @@ class CreateDB:
         #         "SELECT count(*) FROM sqlite_master where tbl_name = 'project' and type = 'table'; ").fetchone()[0]
 
         # POSTGRESQL
-        check_project_tlb = self.cursor.execute("SELECT count(*) FROM pg_catalog.pg_tables where "
-                                                "table_name = 'project' and type = 'table'; ").fetchone()[0]
+        check_project_tlb = self.cursor.execute("SELECT COUNT(*) FROM information_schema.tables "
+                                                "WHERE table_name = 'project' "
+                                                "AND table_type = 'BASE TABLE'; ").fetchone()[0]
 
         # print(f"Check Project table: {check_project_tlb}")
 
