@@ -679,10 +679,15 @@ def del_comment(comment_id):
 # Below is the code from previous lessons. No changes needed.
 @app.route("/about")
 def about():
-    sql_about_query = "SELECT project_id, about FROM project WHERE project_id = 'PMHUT001' "
-    project_data = cursor.execute(sql_about_query).fetchone()
-    project_id, updated_about = project_data
-    return render_template('about.html', text=updated_about)
+    sql_about_query = "SELECT project_id, about FROM project WHERE project_id = %s"
+    cursor.execute(sql_about_query, ('PMHUT001',))
+    project_data = cursor.fetchone()
+    if project_data:
+        project_id, updated_about = project_data
+        return render_template('about.html', text=updated_about)
+    else:
+        return render_template('about.html', text='To be Updated')
+
 
 
 # TODO: edit_about() to edit about
