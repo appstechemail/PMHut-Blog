@@ -35,7 +35,7 @@ class CreateDB:
                 "project_name VARCHAR(100) NOT NULL, about TEXT NOT NULL, "
                 "last_updated_on DATE NOT NULL DEFAULT CURRENT_TIMESTAMP);")
 
-            sql_user_insert = "INSERT INTO project (id, project_id, project_name, about) VALUES (%s, %s, %s)"
+            sql_user_insert = "INSERT INTO project (id, project_id, project_name, about) VALUES (%s, %s, %s, %s)"
             user_insert_param = (1, 'PMHUT001', 'PMHut Project', 'XYZ')
             self.cursor.execute(sql_user_insert, user_insert_param)
             self.db.commit()
@@ -52,14 +52,14 @@ class CreateDB:
         check_user_tlb = self.cursor.fetchone()
         if check_user_tlb[0] == 0:
             self.cursor.execute(
-                "CREATE TABLE user (id INTEGER PRIMARY KEY, email VARCHAR(100) NOT NULL UNIQUE, "
+                "CREATE TABLE 'user' (id INTEGER PRIMARY KEY, email VARCHAR(100) NOT NULL UNIQUE, "
                 "password VARCHAR(100) NOT NULL, name VARCHAR(250) NOT NULL, admin_role BIT(1) DEFAULT 0, "
                 "verification_code INTEGER DEFAULT 0);")
 
             hash_and_salted_password = generate_password_hash(password='admin123$$',
                                                               method='pbkdf2:sha256', salt_length=8)
 
-            sql_user_insert = "INSERT INTO user (id, email, password, name, admin_role) VALUES (%s, %s, %s, %s)"
+            sql_user_insert = "INSERT INTO user (id, email, password, name, admin_role) VALUES (%s, %s, %s, %s, %s)"
             user_insert_param = (1, 'appstechemail@gmail.com', hash_and_salted_password, 'Admin-User', 1)
             self.cursor.execute(sql_user_insert, user_insert_param)
             self.db.commit()
