@@ -679,10 +679,13 @@ def del_comment(comment_id):
 # Below is the code from previous lessons. No changes needed.
 @app.route("/about")
 def about():
-    sql_about_query = "SELECT project_id, about FROM project WHERE project_id = %s"
-    cursor.execute(sql_about_query, ('PMHUT001',))
-    project_data = cursor.fetchone()
-    if project_data:
+    sql_project_count_rec = "SELECT count(*) FROM project WHERE project_id = %s"
+    cursor.execute(sql_project_count_rec, ['PMHUT001'])
+    check_project_count = cursor.fetchone()
+    if check_project_count[0] > 0:
+        sql_about_query = "SELECT project_id, about FROM project WHERE project_id = %s"
+        cursor.execute(sql_about_query, ['PMHUT001'])
+        project_data = cursor.fetchone()
         project_id, updated_about = project_data
         return render_template('about.html', text=updated_about)
     else:
