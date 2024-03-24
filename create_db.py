@@ -94,7 +94,7 @@ class CreateDB:
                 "CREATE TABLE blog_post (id SERIAL PRIMARY KEY, author VARCHAR(250) NOT NULL, "
                 "author_id integer NOT NULL, title VARCHAR(250) NOT NULL UNIQUE, "
                 "subtitle VARCHAR(250) NOT NULL, date DATE NOT NULL, body TEXT NOT NULL, "
-                "img_url VARCHAR(250), CONSTRAINT fk_post_user_id FOREIGN KEY (author_id) REFERENCES user(id)); ")
+                "img_url VARCHAR(250), CONSTRAINT fk_post_user_id FOREIGN KEY (author_id) REFERENCES user_tab(id)); ")
         else:
             print('Table found!')
 
@@ -109,7 +109,7 @@ class CreateDB:
             self.cursor.execute(
                 "CREATE TABLE comment (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, "
                 "user_name VARCHAR(250) NOT NULL, text TEXT NOT NULL, date DATE NOT NULL, post_id INTEGER, "
-                "CONSTRAINT fk_comment_comment_id FOREIGN KEY (user_id) REFERENCES user(id), "
+                "CONSTRAINT fk_comment_comment_id FOREIGN KEY (user_id) REFERENCES user_tab(id), "
                 "CONSTRAINT fk_comment_post_id FOREIGN KEY (post_id) REFERENCES blog_post(id));")
         else:
             print('User table exists!')
