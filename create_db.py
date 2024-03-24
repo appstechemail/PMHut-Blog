@@ -14,7 +14,6 @@ class CreateDB:
     def __init__(self):
         # CREATE DB
         self.db = psycopg2.connect(host=DB_HOSTNAME, database=DB_DATABASE, user=DB_USERNAME, password=DB_PASSWORD)
-        # self.db = sqlite3.connect(rf"{DB_URL}", check_same_thread=False, timeout=30)
         self.cursor = self.db.cursor()
         self.create_blog_post_table()
         self.create_comment_table()
@@ -24,18 +23,12 @@ class CreateDB:
 
     # ############# CREATE COMMENT TABLE IN DB #############################
     def create_comment_table(self):
-        # SQLITE
-        # check_comment_tlb = \
-        #     self.cursor.execute(
-        #         "SELECT count(*) FROM sqlite_master where tbl_name = 'comment' and type = 'table'; ").fetchone()[0]
-        # print(f"Check Comment Post table: {check_comment_tlb}")
-
         # POSTGRESQL
-        check_comment_tlb = self.cursor.execute("SELECT COUNT(*) FROM information_schema.tables "
-                                                "WHERE table_name = 'comment' "
-                                                "AND table_type = 'BASE TABLE'; ").fetchone()[0]
-
-        if check_comment_tlb == 0:
+        check_comment_data = ("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'comment' AND "
+                              "table_type = 'BASE TABLE'; ")
+        self.cursor.execute(check_comment_data)
+        check_comment_tlb = self.cursor.fetchone()
+        if check_comment_tlb[0] == 0:
             self.cursor.execute(
                 "CREATE TABLE comment (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, "
                 "user_name VARCHAR(250) NOT NULL, text TEXT NOT NULL, date DATE NOT NULL, post_id INTEGER, "
@@ -46,18 +39,13 @@ class CreateDB:
 
     # ############# CREATE BLOG_POST TABLE IN DB #############################
     def create_blog_post_table(self):
-        # CREATE TABLE
-        # SQLITE
-        # Check if movies table exists in the database:
-        # check_blog_post_tlb = self.cursor.execute(
-        #     "SELECT count(*) FROM sqlite_master where tbl_name = 'blog_post' and type = 'table'; ").fetchone()[0]
-
         # POSTGRESQL
-        check_blog_post_tlb = self.cursor.execute("SELECT COUNT(*) FROM information_schema.tables "
-                                                  "WHERE table_name = 'blog_post' AND "
-                                                  "table_type = 'BASE TABLE'; ").fetchone()[0]
         # print(f"Check Blog Post table: {check_blog_post_tlb}")
-        if check_blog_post_tlb == 0:
+        check_blog_post_data = ("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'blog_post' AND "
+                                "table_type = 'BASE TABLE'; ")
+        self.cursor.execute(check_blog_post_data)
+        check_blog_post_tlb = self.cursor.fetchone()
+        if check_blog_post_tlb[0] == 0:
             self.cursor.execute(
                 "CREATE TABLE blog_post (id INTEGER PRIMARY KEY, author VARCHAR(250) NOT NULL, "
                 "author_id integer NOT NULL, title VARCHAR(250) NOT NULL UNIQUE, "
@@ -69,18 +57,12 @@ class CreateDB:
     # ############# CREATE token TABLE IN DB #############################
 
     def create_token_table(self):
-        # SQLITE
-        # check_token_tlb = \
-        #     self.cursor.execute(
-        #         "SELECT count(*) FROM sqlite_master where tbl_name = 'token' and type = 'table'; ").fetchone()[0]
-
         # POSTGRESQL
-        check_token_tlb = self.cursor.execute("SELECT COUNT(*) FROM information_schema.tables "
-                                              "WHERE table_name = 'token' AND "
-                                              "table_type = 'BASE TABLE'; ").fetchone()[0]
-        # print(f"Check User table: {check_token_tlb}")
-
-        if check_token_tlb == 0:
+        check_token_data = ("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'token' AND "
+                            "table_type = 'BASE TABLE'; ")
+        self.cursor.execute(check_token_data)
+        check_token_tlb = self.cursor.fetchone()
+        if check_token_tlb[0] == 0:
             self.cursor.execute("CREATE TABLE token (token_id INTEGER PRIMARY KEY, user_id INTEGER, token VARCHAR(100) "
                                 "NOT NULL, expiration_datetime DATETIME NOT NULL, token_used BOOL DEFAULT 0,"
                                 "CONSTRAINT fk_token_user_id FOREIGN KEY (user_id) REFERENCES token(id));")
@@ -89,18 +71,13 @@ class CreateDB:
 
     # ############# CREATE USER TABLE IN DB #############################
     def create_user_table(self):
-        # SQLITE
-        # check_user_tlb = \
-        #     self.cursor.execute(
-        #         "SELECT count(*) FROM sqlite_master where tbl_name = 'user' and type = 'table'; ").fetchone()[0]
-
         # POSTGRESQL
-        check_user_tlb = self.cursor.execute("SELECT COUNT(*) FROM information_schema.tables "
-                                             "WHERE table_name = 'user' AND "
-                                             "table_type = 'BASE TABLE'; ").fetchone()[0]
-        # print(f"Check User table: {check_user_tlb}")
 
-        if check_user_tlb == 0:
+        check_user_data = ("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'user' AND "
+                           "table_type = 'BASE TABLE'; ")
+        self.cursor.execute(check_user_data)
+        check_user_tlb = self.cursor.fetchone()
+        if check_user_tlb[0] == 0:
             self.cursor.execute(
                 "CREATE TABLE user (id INTEGER PRIMARY KEY, email VARCHAR(100) NOT NULL UNIQUE, "
                 "password VARCHAR(100) NOT NULL, name VARCHAR(250) NOT NULL, admin_role BIT(1) DEFAULT 0, "
@@ -118,19 +95,13 @@ class CreateDB:
 
     # ############# CREATE Project TABLE IN DB #############################
     def create_project_table(self):
-        # Sqlite
-        # check_project_tlb = \
-        #     self.cursor.execute(
-        #         "SELECT count(*) FROM sqlite_master where tbl_name = 'project' and type = 'table'; ").fetchone()[0]
-
         # POSTGRESQL
-        check_project_tlb = self.cursor.execute("SELECT COUNT(*) FROM information_schema.tables "
-                                                "WHERE table_name = 'project' "
-                                                "AND table_type = 'BASE TABLE'; ").fetchone()[0]
 
-        # print(f"Check Project table: {check_project_tlb}")
-
-        if check_project_tlb == 0:
+        check_project_data = ("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'project' AND "
+                              "table_type = 'BASE TABLE'; ")
+        self.cursor.execute(check_project_data)
+        check_project_tlb = self.cursor.fetchone()
+        if check_project_tlb[0] == 0:
             self.cursor.execute(
                 "CREATE TABLE project (id INTEGER PRIMARY KEY, project_id VARCHAR(20) NOT NULL, "
                 "project_name VARCHAR(100) NOT NULL, about TEXT NOT NULL, "
