@@ -46,7 +46,7 @@ class CreateDB:
     def create_user_table(self):
         #  POSTGRESQL
 
-        check_user_data = ("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'user' AND "
+        check_user_data = ("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'user_tab' AND "
                            "table_type = 'BASE TABLE'; ")
         self.cursor.execute(check_user_data)
         check_user_tlb = self.cursor.fetchone()
@@ -59,12 +59,12 @@ class CreateDB:
             hash_and_salted_password = generate_password_hash(password='admin123$$',
                                                               method='pbkdf2:sha256', salt_length=8)
 
-            sql_user_insert = "INSERT INTO user (id, email, password, name, admin_role) VALUES (%s, %s, %s, %s, %s)"
+            sql_user_insert = "INSERT INTO user_tab (id, email, password, name, admin_role) VALUES (%s, %s, %s, %s, %s)"
             user_insert_param = (1, 'appstechemail@gmail.com', hash_and_salted_password, 'Admin-User', 1)
             self.cursor.execute(sql_user_insert, user_insert_param)
             self.db.commit()
         else:
-            print('User table exists!')
+            print('User_tab table exists!')
 
     # ############# CREATE token TABLE IN DB #############################
     def create_token_table(self):
