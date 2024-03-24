@@ -1,14 +1,18 @@
 import sqlite3
 from werkzeug.security import generate_password_hash
 import os
+import psycopg2
 
 DB_URL = os.environ.get("DB_URL")
+DB_USERNAME = os.environ.get('DB_USERNAME')
+DB_PASSWORD = os.environ.get('DB_PASSWORD')
 
 
 class CreateDB:
     def __init__(self):
         # CREATE DB
-        self.db = sqlite3.connect(rf"{DB_URL}", check_same_thread=False, timeout=30)
+        self.db = psycopg2.connect(host=DB_URL, database="posts", user=DB_USERNAME, password=DB_PASSWORD)
+        # self.db = sqlite3.connect(rf"{DB_URL}", check_same_thread=False, timeout=30)
         self.cursor = self.db.cursor()
         self.create_blog_post_table()
         self.create_comment_table()
