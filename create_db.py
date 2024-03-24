@@ -21,53 +21,26 @@ class CreateDB:
         self.create_user_table()
         self.create_project_table()
 
-    # ############# CREATE COMMENT TABLE IN DB #############################
-    def create_comment_table(self):
+    # ############# CREATE Project TABLE IN DB #############################
+    def create_project_table(self):
         # POSTGRESQL
-        check_comment_data = ("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'comment' AND "
+
+        check_project_data = ("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'project' AND "
                               "table_type = 'BASE TABLE'; ")
-        self.cursor.execute(check_comment_data)
-        check_comment_tlb = self.cursor.fetchone()
-        if check_comment_tlb[0] == 0:
+        self.cursor.execute(check_project_data)
+        check_project_tlb = self.cursor.fetchone()
+        if check_project_tlb[0] == 0:
             self.cursor.execute(
-                "CREATE TABLE comment (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, "
-                "user_name VARCHAR(250) NOT NULL, text TEXT NOT NULL, date DATE NOT NULL, post_id INTEGER, "
-                "CONSTRAINT fk_comment_comment_id FOREIGN KEY (user_id) REFERENCES user(id), "
-                "CONSTRAINT fk_comment_post_id FOREIGN KEY (post_id) REFERENCES blog_post(id));")
-        else:
-            print('User table exists!')
+                "CREATE TABLE project (id INTEGER PRIMARY KEY, project_id VARCHAR(20) NOT NULL, "
+                "project_name VARCHAR(100) NOT NULL, about TEXT NOT NULL, "
+                "last_updated_on DATE NOT NULL DEFAULT CURRENT_TIMESTAMP);")
 
-    # ############# CREATE BLOG_POST TABLE IN DB #############################
-    def create_blog_post_table(self):
-        # POSTGRESQL
-        # print(f"Check Blog Post table: {check_blog_post_tlb}")
-        check_blog_post_data = ("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'blog_post' AND "
-                                "table_type = 'BASE TABLE'; ")
-        self.cursor.execute(check_blog_post_data)
-        check_blog_post_tlb = self.cursor.fetchone()
-        if check_blog_post_tlb[0] == 0:
-            self.cursor.execute(
-                "CREATE TABLE blog_post (id INTEGER PRIMARY KEY, author VARCHAR(250) NOT NULL, "
-                "author_id integer NOT NULL, title VARCHAR(250) NOT NULL UNIQUE, "
-                "subtitle VARCHAR(250) NOT NULL, date DATE NOT NULL, body TEXT NOT NULL, "
-                "img_url VARCHAR(250), CONSTRAINT fk_post_user_id FOREIGN KEY (author_id) REFERENCES user(id)); ")
+            sql_user_insert = "INSERT INTO project (project_id, project_name, about) VALUES (?, ?, ?)"
+            user_insert_param = ('PMHUT001', 'PMHut Project', 'XYZ')
+            self.cursor.execute(sql_user_insert, user_insert_param)
+            self.db.commit()
         else:
-            print('Table found!')
-
-    # ############# CREATE token TABLE IN DB #############################
-
-    def create_token_table(self):
-        # POSTGRESQL
-        check_token_data = ("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'token' AND "
-                            "table_type = 'BASE TABLE'; ")
-        self.cursor.execute(check_token_data)
-        check_token_tlb = self.cursor.fetchone()
-        if check_token_tlb[0] == 0:
-            self.cursor.execute("CREATE TABLE token (token_id INTEGER PRIMARY KEY, user_id INTEGER, token VARCHAR(100) "
-                                "NOT NULL, expiration_datetime DATETIME NOT NULL, token_used BOOL DEFAULT 0,"
-                                "CONSTRAINT fk_token_user_id FOREIGN KEY (user_id) REFERENCES token(id));")
-        else:
-            print('User table exists!')
+            print('Project table exists!')
 
     # ############# CREATE USER TABLE IN DB #############################
     def create_user_table(self):
@@ -93,25 +66,50 @@ class CreateDB:
         else:
             print('User table exists!')
 
-    # ############# CREATE Project TABLE IN DB #############################
-    def create_project_table(self):
+    # ############# CREATE token TABLE IN DB #############################
+    def create_token_table(self):
         # POSTGRESQL
-
-        check_project_data = ("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'project' AND "
-                              "table_type = 'BASE TABLE'; ")
-        self.cursor.execute(check_project_data)
-        check_project_tlb = self.cursor.fetchone()
-        if check_project_tlb[0] == 0:
-            self.cursor.execute(
-                "CREATE TABLE project (id INTEGER PRIMARY KEY, project_id VARCHAR(20) NOT NULL, "
-                "project_name VARCHAR(100) NOT NULL, about TEXT NOT NULL, "
-                "last_updated_on DATE NOT NULL DEFAULT CURRENT_TIMESTAMP);")
-
-            sql_user_insert = "INSERT INTO project (project_id, project_name, about) VALUES (?, ?, ?)"
-            user_insert_param = ('PMHUT001', 'PMHut Project', 'XYZ')
-            self.cursor.execute(sql_user_insert, user_insert_param)
-            self.db.commit()
+        check_token_data = ("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'token' AND "
+                            "table_type = 'BASE TABLE'; ")
+        self.cursor.execute(check_token_data)
+        check_token_tlb = self.cursor.fetchone()
+        if check_token_tlb[0] == 0:
+            self.cursor.execute("CREATE TABLE token (token_id INTEGER PRIMARY KEY, user_id INTEGER, token VARCHAR(100) "
+                                "NOT NULL, expiration_datetime DATETIME NOT NULL, token_used BOOL DEFAULT 0,"
+                                "CONSTRAINT fk_token_user_id FOREIGN KEY (user_id) REFERENCES token(id));")
         else:
-            print('Project table exists!')
+            print('User table exists!')
 
-    # ############# CREATE Project TABLE IN DB #############################
+    # ############# CREATE BLOG_POST TABLE IN DB #############################
+
+    def create_blog_post_table(self):
+        # POSTGRESQL
+        # print(f"Check Blog Post table: {check_blog_post_tlb}")
+        check_blog_post_data = ("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'blog_post' AND "
+                                "table_type = 'BASE TABLE'; ")
+        self.cursor.execute(check_blog_post_data)
+        check_blog_post_tlb = self.cursor.fetchone()
+        if check_blog_post_tlb[0] == 0:
+            self.cursor.execute(
+                "CREATE TABLE blog_post (id INTEGER PRIMARY KEY, author VARCHAR(250) NOT NULL, "
+                "author_id integer NOT NULL, title VARCHAR(250) NOT NULL UNIQUE, "
+                "subtitle VARCHAR(250) NOT NULL, date DATE NOT NULL, body TEXT NOT NULL, "
+                "img_url VARCHAR(250), CONSTRAINT fk_post_user_id FOREIGN KEY (author_id) REFERENCES user(id)); ")
+        else:
+            print('Table found!')
+
+    # ############# CREATE COMMENT TABLE IN DB #############################
+    def create_comment_table(self):
+        # POSTGRESQL
+        check_comment_data = ("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'comment' AND "
+                              "table_type = 'BASE TABLE'; ")
+        self.cursor.execute(check_comment_data)
+        check_comment_tlb = self.cursor.fetchone()
+        if check_comment_tlb[0] == 0:
+            self.cursor.execute(
+                "CREATE TABLE comment (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, "
+                "user_name VARCHAR(250) NOT NULL, text TEXT NOT NULL, date DATE NOT NULL, post_id INTEGER, "
+                "CONSTRAINT fk_comment_comment_id FOREIGN KEY (user_id) REFERENCES user(id), "
+                "CONSTRAINT fk_comment_post_id FOREIGN KEY (post_id) REFERENCES blog_post(id));")
+        else:
+            print('User table exists!')
