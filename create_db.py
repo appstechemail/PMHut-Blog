@@ -31,12 +31,12 @@ class CreateDB:
         check_project_tlb = self.cursor.fetchone()
         if check_project_tlb[0] == 0:
             self.cursor.execute(
-                "CREATE TABLE project (id INTEGER PRIMARY KEY, project_id VARCHAR(20) NOT NULL, "
+                "CREATE TABLE project (id SERIAL PRIMARY KEY, project_id VARCHAR(20) NOT NULL, "
                 "project_name VARCHAR(100) NOT NULL, about TEXT NOT NULL, "
                 "last_updated_on DATE NOT NULL DEFAULT CURRENT_TIMESTAMP);")
 
-            sql_user_insert = "INSERT INTO project (id, project_id, project_name, about) VALUES (%s, %s, %s, %s)"
-            user_insert_param = (1, 'PMHUT001', 'PMHut Project', 'XYZ')
+            sql_user_insert = "INSERT INTO project (project_id, project_name, about) VALUES (%s, %s, %s)"
+            user_insert_param = ('PMHUT001', 'PMHut Project', 'XYZ')
             self.cursor.execute(sql_user_insert, user_insert_param)
             self.db.commit()
         else:
@@ -52,15 +52,15 @@ class CreateDB:
         check_user_tlb = self.cursor.fetchone()
         if check_user_tlb[0] == 0:
             self.cursor.execute(
-                "CREATE TABLE user_tab (id INTEGER PRIMARY KEY, email VARCHAR(100) NOT NULL UNIQUE, "
+                "CREATE TABLE user_tab (id SERIAL PRIMARY KEY, email VARCHAR(100) NOT NULL UNIQUE, "
                 "password VARCHAR(100) NOT NULL, name VARCHAR(250) NOT NULL, admin_role INTEGER DEFAULT 0, "
                 "verification_code INTEGER DEFAULT 0);")
 
             hash_and_salted_password = generate_password_hash(password='admin123$$',
                                                               method='pbkdf2:sha256', salt_length=8)
 
-            sql_user_insert = "INSERT INTO user_tab (id, email, password, name, admin_role) VALUES (%s, %s, %s, %s, %s)"
-            user_insert_param = (1, 'appstechemail@gmail.com', hash_and_salted_password, 'Admin-User', 1)
+            sql_user_insert = "INSERT INTO user_tab (email, password, name, admin_role) VALUES (%s, %s, %s, %s)"
+            user_insert_param = ('appstechemail@gmail.com', hash_and_salted_password, 'Admin-User', 1)
             self.cursor.execute(sql_user_insert, user_insert_param)
             self.db.commit()
         else:
@@ -74,9 +74,9 @@ class CreateDB:
         self.cursor.execute(check_token_data)
         check_token_tlb = self.cursor.fetchone()
         if check_token_tlb[0] == 0:
-            self.cursor.execute("CREATE TABLE token (token_id INTEGER PRIMARY KEY, user_id INTEGER, token VARCHAR(100) "
-                                "NOT NULL, expiration_datetime DATETIME NOT NULL, token_used BOOL DEFAULT 0,"
-                                "CONSTRAINT fk_token_user_id FOREIGN KEY (user_id) REFERENCES token(id));")
+            self.cursor.execute("CREATE TABLE token (token_id SERIAL PRIMARY KEY, user_id INTEGER, token VARCHAR(100) "
+                                "NOT NULL, expiration_datetime TIMESTAMP NOT NULL, token_used INTEGER DEFAULT 0,"
+                                "CONSTRAINT fk_token_user_id FOREIGN KEY (user_id) REFERENCES user_tab(id));")
         else:
             print('User table exists!')
 
@@ -91,7 +91,7 @@ class CreateDB:
         check_blog_post_tlb = self.cursor.fetchone()
         if check_blog_post_tlb[0] == 0:
             self.cursor.execute(
-                "CREATE TABLE blog_post (id INTEGER PRIMARY KEY, author VARCHAR(250) NOT NULL, "
+                "CREATE TABLE blog_post (id SERIAL PRIMARY KEY, author VARCHAR(250) NOT NULL, "
                 "author_id integer NOT NULL, title VARCHAR(250) NOT NULL UNIQUE, "
                 "subtitle VARCHAR(250) NOT NULL, date DATE NOT NULL, body TEXT NOT NULL, "
                 "img_url VARCHAR(250), CONSTRAINT fk_post_user_id FOREIGN KEY (author_id) REFERENCES user(id)); ")
@@ -107,7 +107,7 @@ class CreateDB:
         check_comment_tlb = self.cursor.fetchone()
         if check_comment_tlb[0] == 0:
             self.cursor.execute(
-                "CREATE TABLE comment (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, "
+                "CREATE TABLE comment (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, "
                 "user_name VARCHAR(250) NOT NULL, text TEXT NOT NULL, date DATE NOT NULL, post_id INTEGER, "
                 "CONSTRAINT fk_comment_comment_id FOREIGN KEY (user_id) REFERENCES user(id), "
                 "CONSTRAINT fk_comment_post_id FOREIGN KEY (post_id) REFERENCES blog_post(id));")
