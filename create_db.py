@@ -23,7 +23,7 @@ class CreateDB:
 
     # ############# CREATE Project TABLE IN DB #############################
     def create_project_table(self):
-        # POSTGRESQL
+        # ### POSTGRESQL
 
         check_project_data = ("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'project' AND "
                               "table_type = 'BASE TABLE'; ")
