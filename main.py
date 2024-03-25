@@ -300,10 +300,17 @@ def register():
                                                               method='pbkdf2:sha256', salt_length=8)
             # param = (request.form.get("email"), hash_and_salted_password, request.form.get("name"))
 
-            param = (form.email.data, hash_and_salted_password, form.name.data)
-            sql_insert = "INSERT into user_tab(email, password, name) VALUES (%s, %s ,%s);"
-            cursor.execute(sql_insert, param)
+            # param = (form.email.data, hash_and_salted_password, form.name.data)
+            # sql_insert = "INSERT into user_tab(email, password, name) VALUES (%s, %s ,%s);"
+            # cursor.execute(sql_insert, param)
+            # db.commit()
+
+            sql_user_insert = "INSERT INTO user_tab (email, password, name, admin_role) VALUES (%s, %s, %s, %s)"
+            user_insert_param = (form.email.data, hash_and_salted_password, form.name.data, 0)
+            cursor.execute(sql_user_insert, user_insert_param)
             db.commit()
+
+
             # sql_register = ("SELECT id, email, password, name, admin_role, (SELECT COALESCE(SUM(author_id), 0) "
             #                 "FROM blog_post Where user.id = blog_post.author_id LIMIT 1) author_id "
             #                 "FROM USER_tab WHERE email = %s")
