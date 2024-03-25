@@ -14,6 +14,8 @@ class CreateDB:
     def __init__(self):
         # CREATE DB
         self.db = psycopg2.connect(host=DB_HOSTNAME, database=DB_DATABASE, user=DB_USERNAME, password=DB_PASSWORD)
+        # self.db = psycopg2.connect(database="posts", user="postgres", password="xxxxxxxxx",
+        #                            host="localhost", port="5432")
         self.cursor = self.db.cursor()
         self.create_project_table()
         self.create_user_table()
@@ -29,6 +31,7 @@ class CreateDB:
                               "table_type = 'BASE TABLE'; ")
         self.cursor.execute(check_project_data)
         check_project_tlb = self.cursor.fetchone()
+        # print(f"Check Project Table: {check_project_tlb}")
         if check_project_tlb[0] == 0:
             self.cursor.execute(
                 "CREATE TABLE project (id SERIAL PRIMARY KEY, project_id VARCHAR(20) NOT NULL, "
@@ -40,6 +43,10 @@ class CreateDB:
             self.cursor.execute(sql_user_insert, user_insert_param)
             self.db.commit()
         else:
+            sql_project_query = 'SELECT * FROM project'
+            self.cursor.execute(sql_project_query)
+            project_data = self.cursor.fetchone()
+            # print(f"Project Data: {project_data}")
             print('Project table exists!')
 
     # ############# CREATE USER TABLE IN DB #############################
@@ -73,12 +80,20 @@ class CreateDB:
                             "table_type = 'BASE TABLE'; ")
         self.cursor.execute(check_token_data)
         check_token_tlb = self.cursor.fetchone()
+        # print(f"check_token_tlb: {check_token_tlb}")
         if check_token_tlb[0] == 0:
-            self.cursor.execute("CREATE TABLE token (token_id SERIAL PRIMARY KEY, user_id INTEGER, token VARCHAR(100) "
-                                "NOT NULL, expiration_datetime TIMESTAMP NOT NULL, token_used INTEGER DEFAULT 0,"
-                                "CONSTRAINT fk_token_user_id FOREIGN KEY (user_id) REFERENCES user_tab(id));")
+            self.cursor.execute("CREATE TABLE token (token_id SERIAL PRIMARY KEY, user_id INTEGER, "
+                                "token VARCHAR(100) NOT NULL, expiration_datetime TIMESTAMP NOT NULL, "
+                                "token_used INTEGER DEFAULT 0, CONSTRAINT fk_token_user_id FOREIGN KEY (user_id) "
+                                "REFERENCES user_tab(id));")
+            self.db.commit()
+            print("Token table created successfully!")
         else:
-            print('User table exists!')
+            sql_token_query = 'SELECT * FROM token'
+            self.cursor.execute(sql_token_query)
+            token_data = self.cursor.fetchone()
+            # print(f"Project Data: {token_data}")
+            print('Token table exists!')
 
     # ############# CREATE BLOG_POST TABLE IN DB #############################
 
@@ -95,8 +110,10 @@ class CreateDB:
                 "author_id integer NOT NULL, title VARCHAR(250) NOT NULL UNIQUE, "
                 "subtitle VARCHAR(250) NOT NULL, date DATE NOT NULL, body TEXT NOT NULL, "
                 "img_url VARCHAR(250), CONSTRAINT fk_post_user_id FOREIGN KEY (author_id) REFERENCES user_tab(id)); ")
+            self.db.commit()
+            print("Blog_post table created successfully!")
         else:
-            print('Table found!')
+            print('Blog Post table exists!')
 
     # ############# CREATE COMMENT TABLE IN DB #############################
     def create_comment_table(self):
@@ -111,5 +128,7 @@ class CreateDB:
                 "user_name VARCHAR(250) NOT NULL, text TEXT NOT NULL, date DATE NOT NULL, post_id INTEGER, "
                 "CONSTRAINT fk_comment_comment_id FOREIGN KEY (user_id) REFERENCES user_tab(id), "
                 "CONSTRAINT fk_comment_post_id FOREIGN KEY (post_id) REFERENCES blog_post(id));")
+            self.db.commit()
+            print("Comment table created successfully!")
         else:
-            print('User table exists!')
+            print('Comment table exists!')

@@ -61,7 +61,7 @@ next_day = datetime.today() + timedelta(days=1)
 
 def gravatar_url(email, size=80, default='https://gravatar.com/appstechemail'):
     email_hash = hashlib.md5(email.lower().encode('utf-8')).hexdigest()
-    return f"https://www.gravatar.com/avatar/{email_hash}?s={size}&d={default}"
+    return f"https://www.gravatar.com/avatar/{email_hash}%ss={size}&d={default}"
 
 
 # def gravatar_url(email, size=80, default='https://gravatar.com/appstechemail'):
@@ -73,7 +73,7 @@ def gravatar_url(email, size=80, default='https://gravatar.com/appstechemail'):
 #         if response.status_code == 200:
 #             gravatar_data = response.json()
 #             if gravatar_data.get('entry'):
-#                 return f"https://www.gravatar.com/avatar/{email_hash}?s={size}"
+#                 return f"https://www.gravatar.com/avatar/{email_hash}%ss={size}"
 #     except requests.RequestException as e:
 #         print(f"Error checking Gravatar: {e}")
 #
@@ -168,18 +168,18 @@ class UserM(UserMixin):
 
 @login_manager.user_loader
 def load_user(user_id):
-    cursor.row_factory = sqlite3.Row
-    sql_user_loader = ("SELECT id, email, password, name, admin_role, "
-                       "(SELECT COALESCE(SUM(author_id), 0) FROM blog_post "
-                       "Where user.id = blog_post.author_id LIMIT 1) author_id FROM USER_tab WHERE id = ?;")
-    user_row = cursor.execute(sql_user_loader, [user_id]).fetchone()
-    # print(f"User Row in Load User: {user_row[0]}")
-    # print(f"User Row in Load User: {dict(user_row)}")
+    sql_user_loader = (
+        "SELECT u.id, u.email, u.password, u.name, u.admin_role, COALESCE(SUM(bp.author_id), 0) "
+        "FROM user_tab u "
+        "LEFT JOIN blog_post bp ON u.id = bp.author_id "
+        "WHERE u.id = %s "
+        "GROUP BY u.id, u.email, u.password, u.name"
+    )
+    cursor.execute(sql_user_loader, [user_id])
+    user_row = cursor.fetchone()
+
     if user_row:
-        # print("Load User: Row exists")
-        # print(f"Load User: UserM(user_row['id'], user_row['email'], user_row['password'], user_row['name']")
-        return UserM(user_row['id'], user_row['email'], user_row['password'], user_row['name'], user_row['admin_role'],
-                     user_row['author_id'])
+        return UserM(user_row[0], user_row[1], user_row[2], user_row[3], user_row[4], user_row[5])
     else:
         return None
 
@@ -200,7 +200,7 @@ def restrict_to_super_user(func):
 def restrict_to_admin(func):
     @wraps(func)
     def decorated_function(*args, **kwargs):
-        # sql_admin_query = "SELECT admin_role from user_tab WHERE id = ? "
+        # sql_admin_query = "SELECT admin_role from user_tab WHERE id = %s "
         # admin_role = cursor.execute(sql_admin_query, [current_user.id]).fetchone()[0]
         # print(f"Inside restrict_to_admin - Admin_role is : {admin_role}")
         # print(f"Inside restrict_to_admin - Admin_role is : {current_user.admin_role}")
@@ -231,7 +231,7 @@ def restrict_to_blog_owner(func):
 
 # def valid_token(token):
 #     # Query the database to check if the token exists and is not expired
-#     sql_query = "SELECT token, expiration_datetime FROM token WHERE token = ?"
+#     sql_query = "SELECT token, expiration_datetime FROM token WHERE token = %s"
 #     cursor.execute(sql_query, (token,))
 #     token_data = cursor.fetchone()
 #
@@ -249,13 +249,13 @@ def restrict_to_blog_owner(func):
 
 def valid_token(token):
     # Query the database to check if the token exists and is not expired
-    sql_query = "SELECT token, expiration_datetime FROM token WHERE token = ?"
+    sql_query = "SELECT token, expiration_datetime FROM token WHERE token = %s"
     cursor.execute(sql_query, (token,))
     token_data = cursor.fetchone()
 
     if token_data:
         # Check if the token is not expired
-        expiration_datetime_str = token_data[1].split('.')[0]  # Remove fractional seconds
+        expiration_datetime_str = str(token_data[1]).split('.')[0]  # Remove fractional seconds
         try:
             expiration_datetime = datetime.strptime(expiration_datetime_str, '%Y-%m-%d %H:%M:%S')
             if expiration_datetime < datetime.now():
@@ -284,15 +284,16 @@ def register():
     form = UserRegd()
     # print(f"user existsCheck: start")
     if request.method == 'POST':
-        cursor.row_factory = sqlite3.Row
         # print(f"user existsCheck: Entered Post Query")
         # print(f"Email: {form.email.data}")
-        sql_query = "SELECT count(*) FROM user_tab WHERE email = ?;"
-        user_exists = cursor.execute(sql_query, [form.email.data]).fetchone()[0]
+        sql_query = "SELECT count(*) FROM user_tab WHERE email = %s;"
+        cursor.execute(sql_query, [form.email.data,])
+        user_exists = cursor.fetchone()
+        # print(f"Cursor at row 292: {cursor.execute(sql_query, [form.email.data])}")
         # user_data = [rec for rec in user_exists]
         # print(f"user exists: {user_exists}")
         # print(f"user exists: {user_data}")
-        if user_exists == 0:
+        if user_exists[0] == 0:
             # print(f"Enter New user creation")
             # Hashing and salting the password entered by the user
             hash_and_salted_password = generate_password_hash(password=form.password.data,
@@ -300,15 +301,23 @@ def register():
             # param = (request.form.get("email"), hash_and_salted_password, request.form.get("name"))
 
             param = (form.email.data, hash_and_salted_password, form.name.data)
-            sql_insert = "INSERT into user(email, password, name) VALUES (?, ? ,?);"
+            sql_insert = "INSERT into user_tab(email, password, name) VALUES (%s, %s ,%s);"
             cursor.execute(sql_insert, param)
             db.commit()
-            sql_register = ("SELECT id, email, password, name, admin_role, (SELECT COALESCE(SUM(author_id), 0) "
-                            "FROM blog_post Where user.id = blog_post.author_id LIMIT 1) author_id "
-                            "FROM USER_tab WHERE email = ?")
-            user_reg_row = cursor.execute(sql_register, [form.email.data]).fetchone()
-            user = UserM(user_reg_row['id'], user_reg_row['email'], user_reg_row['password'], user_reg_row['name'],
-                         user_reg_row['admin_role'], user_reg_row['author_id'])
+            # sql_register = ("SELECT id, email, password, name, admin_role, (SELECT COALESCE(SUM(author_id), 0) "
+            #                 "FROM blog_post Where user.id = blog_post.author_id LIMIT 1) author_id "
+            #                 "FROM USER_tab WHERE email = %s")
+
+            sql_register = ("SELECT u.id, u.email, u.password, u.name, u.admin_role, "
+                            "COALESCE(SUM(bp.author_id), 0) AS author_id "
+                            "FROM user_tab AS u "
+                            "LEFT JOIN blog_post AS bp ON u.id = bp.author_id "
+                            "WHERE u.email = %s GROUP BY u.id, u.email, u.password, u.name, u.admin_role;")
+            cursor.execute(sql_register, [form.email.data])
+            user_reg_row = cursor.fetchone()
+            # print(f"user_reg_row row 317: {user_reg_row}")
+            user = UserM(user_reg_row[0], user_reg_row[1], user_reg_row[2], user_reg_row[3],
+                         user_reg_row[4], user_reg_row[5])
             login_user(user, True)
             return redirect(url_for("get_all_posts"))
         else:
@@ -328,15 +337,16 @@ def search_users():
     # print(f"Start")
     # print(f"Email: {form.email.data}")
     # form.update_role.data = ''
-    cursor.row_factory = sqlite3.Row
 
     # # TODO: update_admin_role() to provide access to create blog and update
-    sql_check_diff_count = "SELECT count(*) FROM user_tab WHERE email = ?"
-    user_count = cursor.execute(sql_check_diff_count, [form.email.data]).fetchone()[0]
+    sql_check_diff_count = "SELECT count(*) FROM user_tab WHERE email = %s"
+    cursor.execute(sql_check_diff_count, [form.email.data])
+    user_count = cursor.fetchone()
     # print(f"User_Count: {user_count}")
-    if user_count > 0:
-        sql_retrieve_admin_code = "SELECT email, admin_role FROM user_tab WHERE email = ?"
-        current_admin_rec = cursor.execute(sql_retrieve_admin_code, [form.email.data]).fetchone()
+    if user_count[0] > 0:
+        sql_retrieve_admin_code = "SELECT email, admin_role FROM user_tab WHERE email = %s"
+        cursor.execute(sql_retrieve_admin_code, [form.email.data])
+        current_admin_rec = cursor.fetchone()
         email, admin_role = current_admin_rec
         # print(f"Admin Role, Form.ADMIN_ROLE.DATA: {type(admin_role)}--{admin_role} ---{type(form.admin_role.data)}--"
         #       f"{form.admin_role.data}")
@@ -344,7 +354,7 @@ def search_users():
         if form.admin_role.data != '' and form.update_role.data:
             if admin_role != int(form.admin_role.data):
                 # print("Enter POST of Search Update")
-                sql_update_role_query = "UPDATE user SET admin_role = ? WHERE email = ?"
+                sql_update_role_query = "UPDATE user_tab SET admin_role = %s WHERE email = %s"
                 update_role_param = (form.admin_role.data, email)
                 cursor.execute(sql_update_role_query, update_role_param)
                 db.commit()
@@ -362,16 +372,19 @@ def search_users():
 
         if email.upper() == 'ALL':
             sql_user_data = "SELECT id, email, name, admin_role FROM user_tab"
-            user_rec = cursor.execute(sql_user_data).fetchall()
+            cursor.execute(sql_user_data)
+            user_rec = cursor.fetchall()
             user_data = [{'id': rec[0], 'email': rec[1], 'name': rec[2], 'admin_role': rec[3]} for rec in user_rec]
             # print(f"User Data1: {user_data}")
             submit_label = 'Search'
         else:
-            sql_count_query = "SELECT count(*) FROM user_tab WHERE email = ?"
-            user_count = cursor.execute(sql_count_query, [form.email.data]).fetchone()[0]
-            if user_count > 0:
-                sql_user_data = "SELECT id, email, name, admin_role FROM user_tab WHERE email = ?"
-                user_rec = cursor.execute(sql_user_data, [form.email.data]).fetchall()
+            sql_count_query = "SELECT count(*) FROM user_tab WHERE email = %s"
+            cursor.execute(sql_count_query, [form.email.data])
+            user_count = cursor.fetchone()
+            if user_count[0] > 0:
+                sql_user_data = "SELECT id, email, name, admin_role FROM user_tab WHERE email = %s"
+                cursor.execute(sql_user_data, [form.email.data])
+                user_rec = cursor.fetchall()
                 user_data = [{'id': rec[0], 'email': rec[1], 'name': rec[2], 'admin_role': rec[3]} for rec in user_rec]
                 form.admin_role.data = user_data[0]['admin_role']
                 # print(f"User Data21: {user_data}")
@@ -393,20 +406,29 @@ def login():
     if request.method == "POST" and form.validate_on_submit():
         username = form.email.data
         password = form.password.data
-        cursor.row_factory = sqlite3.Row
         # Find user by email entered.
-        sql_count = "SELECT count(*) from user_tab WHERE email = ?"
-        user_count = cursor.execute(sql_count, [username]).fetchone()[0]
-        if user_count != 0:
-            sql_login_user = ("SELECT id, email, password, name, admin_role, (SELECT COALESCE(SUM(author_id), 0) "
-                              "FROM blog_post Where user.id = blog_post.author_id LIMIT 1) author_id "
-                              "FROM USER_tab WHERE email = ?")
-            user_row = cursor.execute(sql_login_user, [username]).fetchone()
-            user_rec = dict(user_row)
+        sql_count = "SELECT count(*) from user_tab WHERE email = %s"
+        cursor.execute(sql_count, [username])
+        user_count = cursor.fetchone()
+        if user_count[0] != 0:
+            # sql_login_user = ("SELECT id, email, password, name, admin_role, (SELECT COALESCE(SUM(author_id), 0) "
+            #                   "FROM blog_post Where user.id = blog_post.author_id LIMIT 1) author_id "
+            #                   "FROM USER_tab WHERE email = %s")
+
+            sql_login_user = (
+                "SELECT u.id, u.email, u.password, u.name, u.admin_role, COALESCE(SUM(bp.author_id), 0) "
+                "FROM user_tab u "
+                "LEFT JOIN blog_post bp ON u.id = bp.author_id "
+                "WHERE u.email = %s "
+                "GROUP BY u.id, u.email, u.password, u.name"
+            )
+            cursor.execute(sql_login_user, [username])
+            user_row = cursor.fetchone()
+            # user_rec = dict(user_row)
             # print(user_rec)
             if user_row:
-                user = UserM(user_row['id'], user_row['email'], user_row['password'], user_row['name'],
-                             user_row['admin_role'], user_row['author_id'])
+                user = UserM(user_row[0], user_row[1], user_row[2], user_row[3],
+                             user_row[4], user_row[5])
                 # print(f"user: {user}")
                 if check_password_hash(user.password, password):
                     login_user(user)
@@ -429,8 +451,9 @@ def request_reset_password():
     if request.method == "POST":
         # Generate a random four-digit code
 
-        sql_query = "SELECT id, email, password, name FROM user_tab WHERE email = ?"
-        user_rec = cursor.execute(sql_query, [form.email.data]).fetchone()
+        sql_query = "SELECT id, email, password, name FROM user_tab WHERE email = %s"
+        cursor.execute(sql_query, [form.email.data])
+        user_rec = cursor.fetchone()
         if user_rec:
             # print(f"User Rec in Reset: {user_rec}")
             user_id, user_email, user_password, user_name = user_rec
@@ -439,22 +462,23 @@ def request_reset_password():
             verification_code = ''.join(random.choices(string.digits, k=4))
             # verification_code_time = f"{verification_code}-{now}"
 
-            sql_verification_query = "UPDATE user SET verification_code = ? Where email = ?"
+            sql_verification_query = "UPDATE user_tab SET verification_code = %s Where email = %s"
             param = (verification_code, user_email)
             cursor.execute(sql_verification_query, param)
 
             random_token = generate_token()
             # print("Random Token:", random_token)
-            sql_check_token_userid = "SELECT count(*) FROM token WHERE user_id = ? "
-            sql_token_userid_count = cursor.execute(sql_check_token_userid, [user_id]).fetchone()[0]
-            if sql_token_userid_count > 0:
-                sql_update_token_id = ("UPDATE token SET token = ?, expiration_datetime = ?, token_used = ? "
-                                       "WHERE user_id = ?")
+            sql_check_token_userid = "SELECT count(*) FROM token WHERE user_id = %s "
+            cursor.execute(sql_check_token_userid, [user_id])
+            sql_token_userid_count = cursor.fetchone()
+            if sql_token_userid_count[0] > 0:
+                sql_update_token_id = ("UPDATE token SET token = %s, expiration_datetime = %s, token_used = %s "
+                                       "WHERE user_id = %s")
                 update_token_param = (random_token, next_day, 0, user_id)
                 cursor.execute(sql_update_token_id, update_token_param)
                 db.commit()
             else:
-                sql_insert_token = "INSERT INTO token(token, user_id, expiration_datetime) VALUES(?, ?, ?);"
+                sql_insert_token = "INSERT INTO token(token, user_id, expiration_datetime) VALUES(%s, %s, %s);"
                 token_param = (random_token, user_id, next_day)
                 cursor.execute(sql_insert_token, token_param)
                 db.commit()
@@ -511,26 +535,29 @@ def reset_password(token):
     form = ChangePassword()
     if request.method == "POST":
         check_token = valid_token(token)
-        sql_check_token_used_query = "SELECT token_id, user_id, token_used from token where token = ?"
-        get_token_data = cursor.execute(sql_check_token_used_query, [token]).fetchone()
+        sql_check_token_used_query = "SELECT token_id, user_id, token_used from token where token = %s"
+        cursor.execute(sql_check_token_used_query, [token])
+        get_token_data = cursor.fetchone()
         token_id, user_id, token_used = get_token_data
         if check_token and not token_used:
-            sql_check_email = "SELECT count(*) FROM user_tab WHERE email = ?"
-            email_count = cursor.execute(sql_check_email, [form.email.data]).fetchone()[0]
-            if email_count > 0:
+            sql_check_email = "SELECT count(*) FROM user_tab WHERE email = %s"
+            cursor.execute(sql_check_email, [form.email.data])
+            email_count = cursor.fetchone()
+            if email_count[0] > 0:
                 if form.new_password.data == form.confirm_password.data:
                     hash_and_salted_password = generate_password_hash(password=form.new_password.data,
                                                                       method='pbkdf2:sha256', salt_length=8)
-                    sql_verification_query = "SELECT count(*) FROM user_tab WHERE verification_code = ?"
-                    verification_count = cursor.execute(sql_verification_query, [form.verify.data]).fetchone()[0]
+                    sql_verification_query = "SELECT count(*) FROM user_tab WHERE verification_code = %s"
+                    cursor.execute(sql_verification_query, [form.verify.data])
+                    verification_count = cursor.fetchone()
                     # print(f"Verification Count: {verification_count}")
-                    if verification_count > 0:
-                        sql_update_query = "UPDATE user SET password = ? WHERE email = ?;"
+                    if verification_count[0] > 0:
+                        sql_update_query = "UPDATE user_tab SET password = %s WHERE email = %s;"
                         update_password_param = (hash_and_salted_password, form.email.data)
                         cursor.execute(sql_update_query, update_password_param)
 
-                        sql_update_token_used_query = ("UPDATE token SET token_used = ? "
-                                                       "WHERE user_id = (SELECT id FROM USER_tab WHERE email = ?)")
+                        sql_update_token_used_query = ("UPDATE token SET token_used = %s "
+                                                       "WHERE user_id = (SELECT id FROM USER_tab WHERE email = %s)")
                         update_token_used_param = (1, form.email.data)
                         cursor.execute(sql_update_token_used_query, update_token_used_param)
 
@@ -586,27 +613,28 @@ def show_post(post_id):
 
         new_comment_param = (current_user.id, current_user.name, form.comment.data, now, post_id)
         sql_insert = ("INSERT INTO comment(user_id, user_name, text, date, post_id) "
-                      "values(?, ?, ?, ?, ?);")
+                      "values(%s, %s, %s, %s, %s);")
         cursor.execute(sql_insert, new_comment_param)
         db.commit()
         form.comment.data = ''
     # if current_user.is_authenticated:
-    sql_comment_count = "SELECT count(*) FROM comment WHERE post_id = ?"
-    comment_count = cursor.execute(sql_comment_count, [post_id]).fetchone()[0]
+    sql_comment_count = "SELECT count(*) FROM comment WHERE post_id = %s"
+    cursor.execute(sql_comment_count, [post_id])
+    comment_count = cursor.fetchone()
     # print(f"Comment Count: {comment_count}")
-    if comment_count > 0:
-        sql_comment_query = ("SELECT id, user_id, user_name, text, date, post_id, (SELECT email FROM user_tab "
-                             "Where user.id = comment.user_id LIMIT 1) email FROM comment WHERE post_id = ?")
+    if comment_count[0] > 0:
 
-        comment_rec = cursor.execute(sql_comment_query, [post_id]).fetchall()
+        sql_comment_query = ("SELECT c.id, c.user_id, c.user_name, c.text, c.date, c.post_id, "
+                             "( SELECT u.email FROM user_tab AS u WHERE u.id = c.user_id LIMIT 1) AS email "
+                             "FROM comment AS c WHERE c.post_id = %s order by c.date desc;")
+
+        cursor.execute(sql_comment_query, [post_id])
+        comment_rec = cursor.fetchall()
         # print(f"Comment Rec - {comment_rec}")
         # comment_data = [dict(rec) for rec in comment_rec]  # It will not work as comment table has all columns
         comment_data = [{"id": rec[0], "author_id": rec[1], "author": rec[2], "text": rec[3], "date": rec[4],
                          "post_id": rec[5], "email": rec[6]} for rec in comment_rec]
 
-        # comment_data[0]['comment_user_email'] = gravatar_url(comment_data[0]['email'])
-        # comment_data[0]['comment_user_email'] = "https://gravatar.com/appstechemail"
-        # print(f"Comment Data another: {comment_data}")
         return render_template("post.html", post=requested_post, comments=comment_data,
                                form=form, current_user=current_user)
 
@@ -618,15 +646,13 @@ def show_post(post_id):
 @app.route("/new-post", methods=['GET', 'POST'])
 def new_blog_post():
     form = BlogPostForm()
-    posts = blog_posts.blog_posts()
+    # posts = blog_posts.blog_posts()
     # max_id = {k: max(d[k] for d in posts) for k in posts[0].keys()}["id"]
     if form.validate_on_submit() and request.method == 'POST':
-        # sql_insert_authid = "SELECT id FROM user_tab WHERE name = ?"
-        # print(f"Inside new_blog_post - Author Name: {form.author.data}")
-        # auth_id = cursor.execute(sql_insert_authid, [form.author.data]).fetchone()[0]
-        # print(f"Author ID: {auth_id}")
+
         param = (current_user.id, form.title.data, form.subtitle.data, now, form.body.data, form.author.data,
                  form.img_url.data)
+        # print(f"Param in Main New_Blog: {param}")
         blog_posts.new_blog_post(param)
         return redirect(url_for('get_all_posts'))
     else:
@@ -666,8 +692,9 @@ def del_post(post_id):
 @app.route("/del-comment/<comment_id>", methods=['GET', 'DELETE'])
 @restrict_to_super_user
 def del_comment(comment_id):
-    sql_comment_query = "SELECT post_id, id FROM comment WHERE id = ?"
-    post_comment_rec = cursor.execute(sql_comment_query, [comment_id]).fetchone()
+    sql_comment_query = "SELECT post_id, id FROM comment WHERE id = %s"
+    cursor.execute(sql_comment_query, [comment_id])
+    post_comment_rec = cursor.fetchone()
     # print(f"Post_comment_rec: {post_comment_rec}")
     post_id, comment_id = post_comment_rec
     # print(f"post_id - comment_id ---- {post_id}--{comment_id}")
@@ -697,13 +724,14 @@ def about():
 @restrict_to_super_user
 def edit_about():
     sql_project_query = ("SELECT id, project_id, project_name, about, last_updated_on FROM project "
-                         "WHERE project_id = ? ")
-    project_rec = cursor.execute(sql_project_query, ['PMHUT001']).fetchone()
+                         "WHERE project_id = %s ")
+    cursor.execute(sql_project_query, ['PMHUT001'])
+    project_rec = cursor.fetchone()
     # print(f"Project Rec: {project_rec}")
     pid, project_id, project_name, project_about, last_update_on = project_rec
     form = AboutForm(project_about=project_about)
     if form.validate_on_submit() and request.method == 'POST':
-        sql_project_update_query = "UPDATE project SET about = ? WHERE project_id = ?"
+        sql_project_update_query = "UPDATE project SET about = %s WHERE project_id = %s"
         project_update_param = (form.project_about.data, project_id)
         cursor.execute(sql_project_update_query, project_update_param)
         db.commit()
