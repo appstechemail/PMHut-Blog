@@ -459,82 +459,89 @@ def request_reset_password():
 
     if request.method == "POST":
         # Generate a random four-digit code
+        valid_email_query = "SELECT count(*) FROM user_tab WHERE email = %s"
+        cursor.execute(valid_email_query, [form.email.data])
+        get_email_rec = cursor.fetchone()
+        get_email = get_email_rec[0]
+        if get_email > 0:
+            sql_query = "SELECT id, email, password, name FROM user_tab WHERE email = %s"
+            cursor.execute(sql_query, [form.email.data])
+            user_rec = cursor.fetchone()
+            if user_rec:
+                # print(f"User Rec in Reset: {user_rec}")
+                user_id, user_email, user_password, user_name = user_rec
+                # print(f"User rec: {user_email}, {user_password}, {user_name}")
 
-        sql_query = "SELECT id, email, password, name FROM user_tab WHERE email = %s"
-        cursor.execute(sql_query, [form.email.data])
-        user_rec = cursor.fetchone()
-        if user_rec:
-            # print(f"User Rec in Reset: {user_rec}")
-            user_id, user_email, user_password, user_name = user_rec
-            # print(f"User rec: {user_email}, {user_password}, {user_name}")
+                verification_code = ''.join(random.choices(string.digits, k=4))
+                # verification_code_time = f"{verification_code}-{now}"
 
-            verification_code = ''.join(random.choices(string.digits, k=4))
-            # verification_code_time = f"{verification_code}-{now}"
+                sql_verification_query = "UPDATE user_tab SET verification_code = %s Where email = %s"
+                param = (verification_code, user_email)
+                cursor.execute(sql_verification_query, param)
 
-            sql_verification_query = "UPDATE user_tab SET verification_code = %s Where email = %s"
-            param = (verification_code, user_email)
-            cursor.execute(sql_verification_query, param)
+                random_token = generate_token()
+                # print("Random Token:", random_token)
+                sql_check_token_userid = "SELECT count(*) FROM token WHERE user_id = %s "
+                cursor.execute(sql_check_token_userid, [user_id])
+                sql_token_userid_count = cursor.fetchone()
+                if sql_token_userid_count[0] > 0:
+                    sql_update_token_id = ("UPDATE token SET token = %s, expiration_datetime = %s, token_used = %s "
+                                           "WHERE user_id = %s")
+                    update_token_param = (random_token, next_day, 0, user_id)
+                    cursor.execute(sql_update_token_id, update_token_param)
+                    db.commit()
+                else:
+                    sql_insert_token = "INSERT INTO token(token, user_id, expiration_datetime) VALUES(%s, %s, %s);"
+                    token_param = (random_token, user_id, next_day)
+                    cursor.execute(sql_insert_token, token_param)
+                    db.commit()
 
-            random_token = generate_token()
-            # print("Random Token:", random_token)
-            sql_check_token_userid = "SELECT count(*) FROM token WHERE user_id = %s "
-            cursor.execute(sql_check_token_userid, [user_id])
-            sql_token_userid_count = cursor.fetchone()
-            if sql_token_userid_count[0] > 0:
-                sql_update_token_id = ("UPDATE token SET token = %s, expiration_datetime = %s, token_used = %s "
-                                       "WHERE user_id = %s")
-                update_token_param = (random_token, next_day, 0, user_id)
-                cursor.execute(sql_update_token_id, update_token_param)
-                db.commit()
-            else:
-                sql_insert_token = "INSERT INTO token(token, user_id, expiration_datetime) VALUES(%s, %s, %s);"
-                token_param = (random_token, user_id, next_day)
-                cursor.execute(sql_insert_token, token_param)
-                db.commit()
+                # Send an email containing the reset password link with the token
+                reset_password_link = url_for('reset_password', token=random_token, _external=True)
 
-            # Send an email containing the reset password link with the token
-            reset_password_link = url_for('reset_password', token=random_token, _external=True)
+                # Render the template with the user's name and the verification code
+                html_content = render_template('password-change.html', user_name=user_name,
+                                               verification_code=verification_code, reset_link=reset_password_link)
 
-            # Render the template with the user's name and the verification code
-            html_content = render_template('password-change.html', user_name=user_name,
-                                           verification_code=verification_code, reset_link=reset_password_link)
+                # print(f"HTML CONTENT: {html_content}")
 
-            # print(f"HTML CONTENT: {html_content}")
+                # Create a multipart message container
+                msg = MIMEMultipart('alternative')
+                msg['Subject'] = 'Blog Reset Password'
+                msg['From'] = EMAIL
+                msg['To'] = user_email
+                # print(f"msg: {msg}")
 
-            # Create a multipart message container
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = 'Blog Reset Password'
-            msg['From'] = EMAIL
-            msg['To'] = user_email
-            # print(f"msg: {msg}")
+                # Attach the HTML content to the email
+                html_message = MIMEText(html_content, 'html')
+                # print(f"html_message: {html_message}")
+                msg.attach(html_message)
 
-            # Attach the HTML content to the email
-            html_message = MIMEText(html_content, 'html')
-            # print(f"html_message: {html_message}")
-            msg.attach(html_message)
+                # Image Embedded
+                # This example assumes the image is in the current directory
+                # fp = open('C:/MyFolder/Python/pythonProject/PMHut-Blog/static/assets/img/pmlogo.png', 'rb')
+                fp = open('./static/assets/img/pmlogo.png', 'rb')
+                msg_image = MIMEImage(fp.read())
+                fp.close()
 
-            # Image Embedded
-            # This example assumes the image is in the current directory
-            # fp = open('C:/MyFolder/Python/pythonProject/PMHut-Blog/static/assets/img/pmlogo.png', 'rb')
-            fp = open('./static/assets/img/pmlogo.png', 'rb')
-            msg_image = MIMEImage(fp.read())
-            fp.close()
+                # Define the image's ID as referenced in password-change.html
+                msg_image.add_header('Content-ID', '<image1>')
+                msg_image.add_header('Content-Disposition', 'inline', filename='pmlhutlogo.png')
+                msg.attach(msg_image)
 
-            # Define the image's ID as referenced in password-change.html
-            msg_image.add_header('Content-ID', '<image1>')
-            msg_image.add_header('Content-Disposition', 'inline', filename='pmlhutlogo.png')
-            msg.attach(msg_image)
+                with smtplib.SMTP(SMTP_ADDRESS, port=587) as connection:
+                    connection.starttls()
+                    connection.login(EMAIL, EMAIL_PASSWORD)
+                    connection.sendmail(from_addr=msg['From'], to_addrs=msg['To'], msg=msg.as_string())
 
-            with smtplib.SMTP(SMTP_ADDRESS, port=587) as connection:
-                connection.starttls()
-                connection.login(EMAIL, EMAIL_PASSWORD)
-                connection.sendmail(from_addr=msg['From'], to_addrs=msg['To'], msg=msg.as_string())
+                form.email.data = ''
 
-            form.email.data = ''
-
-            # return render_template("password-change.html")
-            return render_template("reset.html", text="Email sent successfully", form=form)
-            # return redirect(url_for('get_all_posts'))
+                # return render_template("password-change.html")
+                return render_template("reset.html", text="Email sent successfully", form=form)
+                # return redirect(url_for('get_all_posts'))
+        else:
+            flash('Invalid email - Please re-check.', 'error')
+            return render_template("reset.html", text="Reset Password", form=form)
     else:
         return render_template("reset.html", text="Reset Password", form=form)
 
@@ -553,7 +560,7 @@ def reset_password(token):
     cursor.execute(sql_email_query, [user_id])
     get_email = cursor.fetchone()
     form.email.data = get_email[0]
-    print(f"email in reset_password: {form.email.data}")
+    # print(f"email in reset_password: {form.email.data}")
 
     if request.method == "POST":
         # check_token = valid_token(token)
