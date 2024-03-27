@@ -142,7 +142,7 @@ class UserReset(FlaskForm):
 
 class ChangePassword(FlaskForm):
     # app.config['BOOTSTRAP_BTN_SIZE'] = 'block'
-    email = StringField('Email', validators=[DataRequired()], render_kw={"placeholder": "Example@email.com"})
+    email = StringField('Email', validators=[DataRequired()], render_kw={"disabled": True})
     new_password = PasswordField('New Password', validators=[DataRequired()], render_kw={"placeholder": "*******"})
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired()],
                                      render_kw={"placeholder": "Re-Type New Password"})
@@ -287,7 +287,7 @@ def register():
         # print(f"user existsCheck: Entered Post Query")
         # print(f"Email: {form.email.data}")
         sql_query = "SELECT count(*) FROM user_tab WHERE email = %s;"
-        cursor.execute(sql_query, [form.email.data,])
+        cursor.execute(sql_query, [form.email.data, ])
         user_exists = cursor.fetchone()
         # print(f"Cursor at row 292: {cursor.execute(sql_query, [form.email.data])}")
         # user_data = [rec for rec in user_exists]
@@ -542,12 +542,27 @@ def request_reset_password():
 @app.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     form = ChangePassword()
+    check_token = valid_token(token)
+    # New code for Get email id and Populate it email id:
+    sql_check_token_used_query = "SELECT token_id, user_id, token_used from token where token = %s"
+    cursor.execute(sql_check_token_used_query, [token])
+    get_token_data = cursor.fetchone()
+    token_id, user_id, token_used = get_token_data
+
+    sql_email_query = "SELECT email FROM user_tab WHERE id = %s"
+    cursor.execute(sql_email_query, [user_id])
+    get_email = cursor.fetchone()
+    form.email.data = get_email[0]
+    print(f"email in reset_password: {form.email.data}")
+
     if request.method == "POST":
-        check_token = valid_token(token)
-        sql_check_token_used_query = "SELECT token_id, user_id, token_used from token where token = %s"
-        cursor.execute(sql_check_token_used_query, [token])
-        get_token_data = cursor.fetchone()
-        token_id, user_id, token_used = get_token_data
+        # check_token = valid_token(token)
+        # check_token = valid_token(token)
+        # sql_check_token_used_query = "SELECT token_id, user_id, token_used from token where token = %s"
+        # cursor.execute(sql_check_token_used_query, [token])
+        # get_token_data = cursor.fetchone()
+        # token_id, user_id, token_used = get_token_data
+
         if check_token and not token_used:
             sql_check_email = "SELECT count(*) FROM user_tab WHERE email = %s"
             cursor.execute(sql_check_email, [form.email.data])
@@ -632,7 +647,6 @@ def show_post(post_id):
     comment_count = cursor.fetchone()
     # print(f"Comment Count: {comment_count}")
     if comment_count[0] > 0:
-
         sql_comment_query = ("SELECT c.id, c.user_id, c.user_name, c.text, c.date, c.post_id, "
                              "( SELECT u.email FROM user_tab AS u WHERE u.id = c.user_id LIMIT 1) AS email "
                              "FROM comment AS c WHERE c.post_id = %s order by c.date desc;")
