@@ -304,12 +304,14 @@ def register():
             # sql_insert = "INSERT into user_tab(email, password, name) VALUES (%s, %s ,%s);"
             # cursor.execute(sql_insert, param)
             # db.commit()
-
-            sql_user_insert = "INSERT INTO user_tab (email, password, name, admin_role) VALUES (%s, %s, %s, %s)"
-            user_insert_param = (form.email.data, hash_and_salted_password, form.name.data, 0)
+            sql_query = "SELECT max(id)+1 FROM user_tab;"
+            cursor.execute(sql_query)
+            user_exists = cursor.fetchone()
+            max_id = user_exists[0]
+            sql_user_insert = "INSERT INTO user_tab (id, email, password, name, admin_role) VALUES (%s, %s, %s, %s, %s)"
+            user_insert_param = (max_id, form.email.data, hash_and_salted_password, form.name.data, 0)
             cursor.execute(sql_user_insert, user_insert_param)
             db.commit()
-
 
             # sql_register = ("SELECT id, email, password, name, admin_role, (SELECT COALESCE(SUM(author_id), 0) "
             #                 "FROM blog_post Where user.id = blog_post.author_id LIMIT 1) author_id "
